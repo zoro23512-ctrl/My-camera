@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Camera</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 20px 0;
+    }
+
+    video {
+      width: 95%;
+      max-width: 600px;
+      border-radius: 15px;
+      background: black;
+    }
+
+    canvas {
+      display: none;
+    }
+
+    #photo {
+      width: 95%;
+      max-width: 600px;
+      margin-top: 15px;
+      border-radius: 15px;
+      display: none;
+    }
+
+    button, a {
+      display: inline-block;
+      margin: 8px;
+      padding: 13px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    button {
+      background: #2196f3;
+      color: white;
+    }
+
+    #saveBtn {
+      background: #4caf50;
+      display: none;
+    }
+
+    #switchBtn {
+      background: #9c27b0;
+    }
+
+    #status {
+      margin: 15px;
+      color: #bbb;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>📷 My Camera</h1>
+
+  <video id="video" autoplay playsinline></video>
+
+  <br>
+
+  <button id="startBtn">Turn On Camera</button>
+  <button id="switchBtn">🔄 Switch Camera</button>
+  <button id="takeBtn">📸 Take Photo</button>
+
+  <canvas id="canvas"></canvas>
+
+  <img id="photo" alt="Captured photo">
+
+  <br>
+
+  <button id="saveBtn">💾 Save Photo</button>
+
+  <p id="status">Camera is off</p>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const photo = document.getElementById("photo");
+
+    const startBtn = document.getElementById("startBtn");
+    const switchBtn = document.getElementById("switchBtn");
+    const takeBtn = document.getElementById("takeBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    const status = document.getElementById("status");
+
+    let stream = null;
+
+    // Start with the back camera
+    let facingMode = "environment";
+
+    // Start camera
+    async function startCamera() {
+      try {
+        // Stop old camera first
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: facingMode
+          },
+          audio: false
+        });
+
+        video.srcObject = stream;
+
+        status.textContent =
+          facingMode === "user"
+            ? "🤳 Front camera is ON"
+            : "📷 Back camera is ON";
+
+      } catch (error) {
+        console.error(error);
+        status.textContent =
+          "❌ Camera permission was denied or unavailable.";
+      }
+    }
+
+    // Switch camera
+    switchBtn.addEventListener("click", async () => {
+      facingMode =
+        facingMode === "environment"
+          ? "user"
+          : "environment";
+
+      await startCamera();
+    });
+
+    // Start button
+    startBtn.addEventListener("click", startCamera);
+
+    // Take photo
+    takeBtn.addEventListener("click", () => {
+      if (!stream) {
+        status.textContent = "❌ Turn on the camera first.";
+        return;
+      }
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext("2d");
+
+      // Mirror the selfie camera correctly
+      if (facingMode === "user") {
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
+      }
+
+      context.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      const imageData = canvas.toDataURL(
+        "image/jpeg",
+        0.95
+      );
+
+      photo.src = imageData;
+      photo.style.display = "block";
+      saveBtn.style.display = "inline-block";
+
+      status.textContent = "✅ Photo captured!";
+    });
+
+    // Save photo to phone
+    saveBtn.addEventListener("click", () => {
+      if (!photo.src) return;
+
+      const link = document.createElement("a");
+
+      link.href = photo.src;
+      link.download =
+        "camera-photo-" +
+        new Date().getTime() +
+        ".jpg";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      status.textContent =
+        "💾 Saving photo to your phone...";
+    });
+  </script>
+
+</body>
+</html>
