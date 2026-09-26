@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Private Camera</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    h2 {
+      margin: 20px 0 10px;
+    }
+
+    video {
+      width: 92%;
+      max-width: 600px;
+      border-radius: 15px;
+      background: #000;
+      margin-top: 10px;
+    }
+
+    canvas {
+      display: none;
+    }
+
+    button {
+      margin: 12px 5px;
+      padding: 13px 20px;
+      border: 0;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #start {
+      background: #2196f3;
+      color: white;
+    }
+
+    #capture {
+      background: #4caf50;
+      color: white;
+    }
+
+    #download {
+      background: #ff9800;
+      color: white;
+      display: none;
+    }
+
+    #message {
+      margin: 10px;
+      color: #ccc;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>📷 Private Camera</h2>
+
+  <video id="video" autoplay playsinline></video>
+
+  <br>
+
+  <button id="start">Turn on camera</button>
+  <button id="capture">Take Photo</button>
+  <button id="download">Save Photo</button>
+
+  <canvas id="canvas"></canvas>
+
+  <p id="message">
+    Photos are processed locally on this device.
+  </p>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const startButton = document.getElementById("start");
+    const captureButton = document.getElementById("capture");
+    const downloadButton = document.getElementById("download");
+    const message = document.getElementById("message");
+
+    let stream = null;
+    let photoData = null;
+
+    startButton.onclick = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "environment"
+          },
+          audio: false
+        });
+
+        video.srcObject = stream;
+        message.textContent = "Camera is on.";
+      } catch (error) {
+        message.textContent = "Camera permission was denied or unavailable.";
+      }
+    };
+
+    captureButton.onclick = () => {
+      if (!stream) {
+        message.textContent = "Turn on the camera first.";
+        return;
+      }
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext("2d");
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      photoData = canvas.toDataURL("image/jpeg", 0.95);
+
+      downloadButton.style.display = "inline-block";
+      message.textContent = "Photo captured locally.";
+    };
+
+    downloadButton.onclick = () => {
+      if (!photoData) return;
+
+      const link = document.createElement("a");
+      link.href = photoData;
+      link.download = "photo.jpg";
+      link.click();
+    };
+  </script>
+
+</body>
+</html>
